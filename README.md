@@ -3,4 +3,4 @@ ICS Discovery Tools
 
 ICS Discovery Tools Releases
 
-plcscan.org The Test project
+[Warning:This is a test project.](http://plcscan.org)
