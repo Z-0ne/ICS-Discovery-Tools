@@ -338,7 +338,7 @@ action = function(host,port)
 --   add support S7 1200 packet send
 ---
       output = stdnse.output_table()
-	  local constatus,conerr = sock:connect(host,port)
+      local constatus,conerr = sock:connect(host,port)
       if not constatus then
         stdnse.print_debug(1,
           'Error establishing connection for %s - %s', host,conerr
@@ -346,30 +346,30 @@ action = function(host,port)
         return nil
       end
       S7DescFlag  = send_receive(sock, COTP_0x0000)
-	  local pos, CC_connect_confirm = bin.unpack("C", S7DescFlag, 6)
-	  if ( CC_connect_confirm ~= 0xd0) then
-	    stdnse.print_debug(1, "Not a successful COTP Packet_1200")
-		output = DescFlag(S7DescFlag)
-		return output
-	  end
-	  response = send_receive(sock, Setup_comm)
-	  local pos, protocol_id = bin.unpack("C", response, 8)
-	  if ( protocol_id ~= 0x32) then
-	    stdnse.print_debug(1, "Not a successful S7COMM Packet_1200")
+      local pos, CC_connect_confirm = bin.unpack("C", S7DescFlag, 6)
+      if ( CC_connect_confirm ~= 0xd0) then
+        stdnse.print_debug(1, "Not a successful COTP Packet_1200")
         output = DescFlag(S7DescFlag)
         return output
-	  end
-	  response  = send_receive(sock, Req_SZL_0x0011)
-	  local pos, protocol_id = bin.unpack("C", response, 8)
-	  if ( protocol_id ~= 0x32) then
-	    stdnse.print_debug(1, "Not a successful S7COMM Packet_1200")
+      end
+      response = send_receive(sock, Setup_comm)
+      local pos, protocol_id = bin.unpack("C", response, 8)
+      if ( protocol_id ~= 0x32) then
+        stdnse.print_debug(1, "Not a successful S7COMM Packet_1200")
         output = DescFlag(S7DescFlag)
         return output
-	  end
-	  output = parse_response(response, host, port, output)
-	  response = send_receive(sock, Req_Block_fuc_list)
-	  output = parse_listblock_response(response, output)
-	  return output
+      end
+      response  = send_receive(sock, Req_SZL_0x0011)
+      local pos, protocol_id = bin.unpack("C", response, 8)
+      if ( protocol_id ~= 0x32) then
+        stdnse.print_debug(1, "Not a successful S7COMM Packet_1200")
+        output = DescFlag(S7DescFlag)
+        return output
+      end
+      output = parse_response(response, host, port, output)
+      response = send_receive(sock, Req_Block_fuc_list)
+      output = parse_listblock_response(response, output)
+      return output
 --
 ---
   end
