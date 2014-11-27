@@ -1,9 +1,10 @@
 --
 -- required packages for this script
 --
-
--- Fix Support S7-300¡¢400 and S7-1200 and S7 Series Unknown Devices
--- Last change 2014-11-14 plcscan.org
+-- plcscan.org Fix
+-- Fix Support S7-300/400 and S7-1200 and S7 Series Unknown Devices
+-- Last change 2014-11-14 add Support S7-1200
+-- Last change 2014-11-26 add enumerates block functions number
 --
 local bin = require "bin"
 local nmap = require "nmap"
@@ -41,6 +42,16 @@ categories = {"discovery","intrusive"}
 --|   Module Type: CPU 315-2 DP
 --|   Module: 6ES7 315-2AG10-0AB0
 --|_  Serial Number: S C-X4U421302009
+--| ----------------------------------  
+--|   Blocks Name: Count(Num)
+--|   OB: 9
+--|   FB: 0
+--|   FC: 19
+--|   DB: 18
+--|   SDB: 17
+--|   SFC: 71
+--|   SFB: 20
+--
 --
 -- @output
 --102/tcp open  Siemens S7 1200 PLC
@@ -195,8 +206,7 @@ end
 --
 -- add S7 protocol Flag
 --
----
-
+--
 function DescFlag(S7DescFlag)
   output = stdnse.output_table()
   local pos, protocol_head = bin.unpack("C", S7DescFlag, 1)
@@ -205,6 +215,61 @@ function DescFlag(S7DescFlag)
 	return output
 	end
 end
+--
+--
+---
+-- to parse the list block response
+--
+--
+function parse_listblock_response(response, output)
+  local block_type = {
+  [56] = "OB",
+  [69] = "FB",
+  [67] = "FC",
+  [65] = "DB",
+  [66] = "SDB",
+  [68] = "SFC",
+  [70] = "SFB"
+}
+--  print "dev debug1"
+  local pos, protocol_id = bin.unpack("C", response, 8)
+  local pos, listlength = bin.unpack("C", response, 33)
+  if (protocol_id == 0x32) then
+--    print "dev debug2"
+    if (listlength == 0x1c) then
+--	  print "dev debug3"
+	  output["Blocks Name"] = "Count(Num)"
+      local pos, fuc1 = bin.unpack("C", response, 35)
+	  local pos, count1 = bin.unpack("C", response, 37)
+      output[block_type[fuc1]] = count1
+      local pos, fuc2 = bin.unpack("C", response, 39)
+	  local pos, count2 = bin.unpack("C", response, 41)	
+      output[block_type[fuc2]] = count2
+      local pos, fuc3 = bin.unpack("C", response, 43)
+	  local pos, count3 = bin.unpack("C", response, 45)
+      output[block_type[fuc3]] = count3
+	  local pos, fuc4 = bin.unpack("C", response, 47)
+	  local pos, count4 = bin.unpack("C", response, 49)
+      output[block_type[fuc4]] = count4
+	  local pos, fuc5 = bin.unpack("C", response, 51)
+	  local pos, count5 = bin.unpack("C", response, 53)
+      output[block_type[fuc5]] = count5
+	  local pos, fuc6 = bin.unpack("C", response, 55)
+	  local pos, count6 = bin.unpack("C", response, 57)
+      output[block_type[fuc6]] = count6
+	  local pos, fuc7 = bin.unpack("C", response, 59)
+	  local pos, count7 = bin.unpack("C", response, 61)
+      output[block_type[fuc7]] = count7
+      return output
+	else
+	  return output
+    end
+  else
+    return output
+  end
+end
+
+--
 --
 --
 ---
@@ -229,7 +294,7 @@ action = function(host,port)
   -- setup the second SZL request
   local second_SZL_Request = bin.pack("H","0300002102f080320700000000000800080001120411440100ff090004001c0001")
   ---
-  -- add S7-1200 packet 
+  -- add S7-1200 packet and Block Functions Enumerates
   -- by Z-0ne   plcscan.org
   -- Based on S7COMM Protocol analysis plugin.
   --
@@ -240,6 +305,10 @@ action = function(host,port)
   local Setup_comm = bin.pack("H","0300001902f080320100000c0000080000f0000001000101e0")
   -- Request SZL functions Read SZL ID=0X0011
   local Req_SZL_0x0011 = bin.pack("H","0300002102f080320700000d00000800080001120411440100ff09000400110000")
+  -- Request Block Functions -> List blocks
+  local Req_Block_fuc_list = bin.pack("H","0300001d02f0803207000025000008000400011204114301000a000000")
+  --
+  ---
   -- response is used to collect the packet responses
   local response
   -- output table for Nmap
@@ -298,6 +367,8 @@ action = function(host,port)
 		return output
 	  end
 	  output = parse_response(response, host, port, output)
+	  response = send_receive(sock, Req_Block_fuc_list)
+	  output = parse_listblock_response(response, output)
 	  return output
 --
 ---
@@ -311,7 +382,7 @@ action = function(host,port)
   if ( protocol_id ~= 0x32) then
     stdnse.print_debug(1, "Not a successful S7COMM Packet")
 --    return nil
- end
+  end
 ---  
   -- send and receive the READ_SZL packet
   response  = send_receive(sock, Read_SZL)
@@ -331,6 +402,12 @@ action = function(host,port)
   response = send_receive(sock, second_SZL_Request)
   -- parse the response for more information
   output = second_parse_response(response, output)
+--- 
+  -- send and receive the list block request
+  response = send_receive(sock, Req_Block_fuc_list)
+  -- parse the response
+  output = parse_listblock_response(response, output)
+---  
   -- if nothing was parsed from the previous two responses
   if(output == nil) then
     -- re initialize the table
@@ -378,6 +455,10 @@ action = function(host,port)
     output = parse_response(response, host, port, "ONE", output)
     response = send_receive(sock, second_SZL_Request)
     output = parse_response(response, host, port, "TWO", output)
+---	
+	response = send_receive(sock, Req_Block_fuc_list)
+	output = parse_listblock_response(response, output)
+---
   end
   -- close the socket
   sock:close()
