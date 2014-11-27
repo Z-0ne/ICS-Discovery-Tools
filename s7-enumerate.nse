@@ -132,7 +132,7 @@ function parse_response(response, host, port, output)
     return output
   else
     output = DescFlag(S7DescFlag)
-	return output
+    return output
   end
 end
 
@@ -179,7 +179,7 @@ function second_parse_response(response, output)
     return output
   else
     output = DescFlag(S7DescFlag)
-	return output
+    return output
   end
 end
 ---
@@ -212,8 +212,8 @@ function DescFlag(S7DescFlag)
   local pos, protocol_head = bin.unpack("C", S7DescFlag, 1)
   if (protocol_head == 0x03) then
     output["Devices Type"] = 'Siemens S7 Series Devices'
-	return output
-	end
+    return output
+  end
 end
 --
 --
@@ -238,31 +238,31 @@ function parse_listblock_response(response, output)
 --    print "dev debug2"
     if (listlength == 0x1c) then
 --	  print "dev debug3"
-	  output["Blocks Name"] = "Count(Num)"
+      output["Blocks Name"] = "Count(Num)"
       local pos, fuc1 = bin.unpack("C", response, 35)
-	  local pos, count1 = bin.unpack("C", response, 37)
+      local pos, count1 = bin.unpack("C", response, 37)
       output[block_type[fuc1]] = count1
       local pos, fuc2 = bin.unpack("C", response, 39)
-	  local pos, count2 = bin.unpack("C", response, 41)	
+      local pos, count2 = bin.unpack("C", response, 41)	
       output[block_type[fuc2]] = count2
       local pos, fuc3 = bin.unpack("C", response, 43)
-	  local pos, count3 = bin.unpack("C", response, 45)
+      local pos, count3 = bin.unpack("C", response, 45)
       output[block_type[fuc3]] = count3
-	  local pos, fuc4 = bin.unpack("C", response, 47)
-	  local pos, count4 = bin.unpack("C", response, 49)
+      local pos, fuc4 = bin.unpack("C", response, 47)
+      local pos, count4 = bin.unpack("C", response, 49)
       output[block_type[fuc4]] = count4
-	  local pos, fuc5 = bin.unpack("C", response, 51)
-	  local pos, count5 = bin.unpack("C", response, 53)
+      local pos, fuc5 = bin.unpack("C", response, 51)
+      local pos, count5 = bin.unpack("C", response, 53)
       output[block_type[fuc5]] = count5
-	  local pos, fuc6 = bin.unpack("C", response, 55)
-	  local pos, count6 = bin.unpack("C", response, 57)
+      local pos, fuc6 = bin.unpack("C", response, 55)
+      local pos, count6 = bin.unpack("C", response, 57)
       output[block_type[fuc6]] = count6
-	  local pos, fuc7 = bin.unpack("C", response, 59)
-	  local pos, count7 = bin.unpack("C", response, 61)
+      local pos, fuc7 = bin.unpack("C", response, 59)
+      local pos, count7 = bin.unpack("C", response, 61)
       output[block_type[fuc7]] = count7
       return output
-	else
-	  return output
+    else
+      return output
     end
   else
     return output
@@ -356,15 +356,15 @@ action = function(host,port)
 	  local pos, protocol_id = bin.unpack("C", response, 8)
 	  if ( protocol_id ~= 0x32) then
 	    stdnse.print_debug(1, "Not a successful S7COMM Packet_1200")
-		output = DescFlag(S7DescFlag)
-		return output
+        output = DescFlag(S7DescFlag)
+        return output
 	  end
 	  response  = send_receive(sock, Req_SZL_0x0011)
 	  local pos, protocol_id = bin.unpack("C", response, 8)
 	  if ( protocol_id ~= 0x32) then
 	    stdnse.print_debug(1, "Not a successful S7COMM Packet_1200")
-		output = DescFlag(S7DescFlag)
-		return output
+        output = DescFlag(S7DescFlag)
+        return output
 	  end
 	  output = parse_response(response, host, port, output)
 	  response = send_receive(sock, Req_Block_fuc_list)
@@ -456,8 +456,8 @@ action = function(host,port)
     response = send_receive(sock, second_SZL_Request)
     output = parse_response(response, host, port, "TWO", output)
 ---	
-	response = send_receive(sock, Req_Block_fuc_list)
-	output = parse_listblock_response(response, output)
+    response = send_receive(sock, Req_Block_fuc_list)
+    output = parse_listblock_response(response, output)
 ---
   end
   -- close the socket
